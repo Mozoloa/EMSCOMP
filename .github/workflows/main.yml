@@ -60,9 +60,9 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: srvb-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_DATESTRING }}
+          name: emseq-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_DATESTRING }}
           path: |
-            native/build/scripted/SRVB_artefacts/Release/VST3/
-            native/build/scripted/SRVB_artefacts/Release/AU/
-            !native/build/scripted/SRVB_artefacts/Release/VST3/*.lib
-            !native/build/scripted/SRVB_artefacts/Release/VST3/*.exp
+            native/build/scripted/EMSEQ_artefacts/Release/VST3/
+            native/build/scripted/EMSEQ_artefacts/Release/AU/
+            !native/build/scripted/EMSEQ_artefacts/Release/VST3/*.lib
+            !native/build/scripted/EMSEQ_artefacts/Release/VST3/*.exp

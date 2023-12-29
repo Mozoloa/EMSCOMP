@@ -5,7 +5,7 @@
   },
   "parameters": [
     {
-      "paramId": "hpf-freq",
+      "paramId": "hpf_freq",
       "name": "HPF Frequency",
       "min": 10,
       "max": 1000,
@@ -13,14 +13,14 @@
       "log": true
     },
     {
-      "paramId": "hpf-order",
+      "paramId": "hpf_order",
       "name": "HPF Order",
       "min": 0,
       "max": 8,
       "defaultValue": 0
     },
     {
-      "paramId": "peak-freq",
+      "paramId": "peak_freq",
       "name": "Peak Frequency",
       "min": 20,
       "max": 20000,
@@ -28,21 +28,21 @@
       "log": true
     },
     {
-      "paramId": "peak-q",
+      "paramId": "peak_q",
       "name": "Peak Q",
       "min": 0.1,
       "max": 10.0,
       "defaultValue": 1.0
     },
     {
-      "paramId": "peak-gain",
+      "paramId": "peak_gain",
       "name": "Peak Gain",
       "min": -18,
       "max": 18,
       "defaultValue": 0
     },
     {
-      "paramId": "lpf-freq",
+      "paramId": "lpf_freq",
       "name": "LPF Frequency",
       "min": 1000,
       "max": 20000,
@@ -50,7 +50,7 @@
       "log": true
     },
     {
-      "paramId": "lpf-order",
+      "paramId": "lpf_order",
       "name": "LPF Order",
       "min": 0,
       "max": 8,

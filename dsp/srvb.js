@@ -1,5 +1,5 @@
 import invariant from 'invariant';
-import {el} from '@elemaudio/core';
+import { el } from '@elemaudio/core';
 
 
 // A size 8 Hadamard matrix constructed using Numpy and Scipy.
@@ -12,14 +12,14 @@ import {el} from '@elemaudio/core';
 //
 // @see https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.linalg.hadamard.html
 // @see https://nhigham.com/2020/04/10/what-is-a-hadamard-matrix/
-const H8 = [[ 1,  1,  1,  1,  1,  1,  1,  1],
-            [ 1, -1,  1, -1,  1, -1,  1, -1],
-            [ 1,  1, -1, -1,  1,  1, -1, -1],
-            [ 1, -1, -1,  1,  1, -1, -1,  1],
-            [ 1,  1,  1,  1, -1, -1, -1, -1],
-            [ 1, -1,  1, -1, -1,  1, -1,  1],
-            [ 1,  1, -1, -1, -1, -1,  1,  1],
-            [ 1, -1, -1,  1, -1,  1,  1, -1]];
+const H8 = [[1, 1, 1, 1, 1, 1, 1, 1],
+[1, -1, 1, -1, 1, -1, 1, -1],
+[1, 1, -1, -1, 1, 1, -1, -1],
+[1, -1, -1, 1, 1, -1, -1, 1],
+[1, 1, 1, 1, -1, -1, -1, -1],
+[1, -1, 1, -1, -1, 1, -1, 1],
+[1, 1, -1, -1, -1, -1, 1, 1],
+[1, -1, -1, 1, -1, 1, 1, -1]];
 
 // A diffusion step expecting exactly 8 input channels with
 // a maximum diffusion time of 500ms
@@ -30,13 +30,13 @@ function diffuse(size, ...ins) {
   invariant(len === 8, "Invalid diffusion step!");
   invariant(typeof size === 'number', "Diffusion step size must be a number");
 
-  const dels = ins.map(function(input, i) {
+  const dels = ins.map(function (input, i) {
     const lineSize = size * ((i + 1) / len);
-    return el.sdelay({size: lineSize}, input);
+    return el.sdelay({ size: lineSize }, input);
   });
 
-  return H8.map(function(row, i) {
-    return el.add(...row.map(function(col, j) {
+  return H8.map(function (row, i) {
+    return el.add(...row.map(function (col, j) {
       return el.mul(col * scale, dels[j]);
     }));
   });
@@ -61,26 +61,26 @@ function dampFDN(name, sampleRate, size, decay, modDepth, ...ins) {
   // The unity-gain one pole lowpass here is tuned to taste along
   // the range [0.001, 0.5]. Towards the top of the range, we get into the region
   // of killing the decay time too quickly. Towards the bottom, not much damping.
-  const dels = ins.map(function(input, i) {
+  const dels = ins.map(function (input, i) {
     return el.add(
       input,
       el.mul(
         decay,
         el.smooth(
           0.105,
-          el.tapIn({name: `${name}:fdn${i}`}),
+          el.tapIn({ name: `${name}:fdn${i}` }),
         ),
       ),
     );
   });
 
-  let mix = H8.map(function(row, i) {
-    return el.add(...row.map(function(col, j) {
+  let mix = H8.map(function (row, i) {
+    return el.add(...row.map(function (col, j) {
       return el.mul(col * scale, dels[j]);
     }));
   });
 
-  return mix.map(function(mm, i) {
+  return mix.map(function (mm, i) {
     const modulate = (x, rate, amt) => el.add(x, el.mul(amt, el.cycle(rate)));
     const ms2samps = (ms) => sampleRate * (ms / 1000.0);
 
@@ -94,9 +94,9 @@ function dampFDN(name, sampleRate, size, decay, modDepth, ...ins) {
     const readPos = modulate(delaySize, el.add(0.1, el.mul(i, md)), ms2samps(2.5));
 
     return el.tapOut(
-      {name: `${name}:fdn${i}`},
+      { name: `${name}:fdn${i}` },
       el.delay(
-        {size: ms2samps(750)},
+        { size: ms2samps(750) },
         readPos,
         0,
         mm
@@ -118,7 +118,7 @@ function dampFDN(name, sampleRate, size, decay, modDepth, ...ins) {
 // @param {number} props.mix in [0, 1]
 // @param {core.Node} xl input
 // @param {core.Node} xr input
-export default function srvb(props, xl, xr) {
+export default function emseq(props, xl, xr) {
   invariant(typeof props === 'object', 'Unexpected props object');
 
   const key = props.key;

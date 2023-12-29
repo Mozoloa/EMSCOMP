@@ -21,13 +21,13 @@ globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
 
   // Extract sub-parameters for each group
-  const hpfFreq = el.sm(el.const({ key: "hpffreq", value: state.hpfreq }));
-  const hpfOrder = parseInt(state.hpforder);
-  const peakFreq = el.sm(el.const({ key: "peakfreq", value: state.peakfreq }));
-  const peakQ = el.sm(el.const({ key: "peakq", value: state.peakq }));
-  const peakGain = el.sm(el.const({ key: "peakgain", value: state.peakgain }));
-  const lpfFreq = el.sm(el.const({ key: "lpffreq", value: state.lpffreq }));
-  const lpfOrder = parseInt(state.lpforder);
+  const hpfFreq = el.sm(el.const({ key: "hpf_freq", value: state.hpf_freq }));
+  const hpfOrder = parseInt(state.hpf_order);
+  const peakFreq = el.sm(el.const({ key: "peak_freq", value: state.peak_freq }));
+  const peakQ = el.sm(el.const({ key: "peak_q", value: state.peak_q }));
+  const peakGain = el.sm(el.const({ key: "peak_gain", value: state.peak_gain }));
+  const lpfFreq = el.sm(el.const({ key: "lpf_freq", value: state.lpf_freq }));
+  const lpfOrder = parseInt(state.lpf_order);
 
   let bands = [];
 
