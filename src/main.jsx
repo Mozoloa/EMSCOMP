@@ -9,7 +9,7 @@ import './index.css'
 
 
 // Initial state management
-const store = createStore(() => {});
+const store = createStore(() => { });
 const useStore = createHooks(store);
 
 const errorStore = createStore(() => ({ error: null }));
@@ -17,6 +17,8 @@ const useErrorStore = createHooks(errorStore);
 
 // Interop bindings
 function requestParamValueUpdate(paramId, value) {
+  console.log("requestParamValueUpdate :", paramId, value)
+  console.log("type of postnativemessage :", typeof globalThis.__postNativeMessage__)
   if (typeof globalThis.__postNativeMessage__ === 'function') {
     globalThis.__postNativeMessage__("setParameterValue", {
       paramId,
@@ -33,7 +35,7 @@ import.meta.hot.on('reload-dsp', () => {
   }
 });
 
-globalThis.__receiveStateChange__ = function(state) {
+globalThis.__receiveStateChange__ = function (state) {
   store.setState(JSON.parse(state));
 };
 
@@ -44,7 +46,7 @@ globalThis.__receiveError__ = (err) => {
 // Mount the interface
 function App(props) {
   let state = useStore();
-  let {error} = useErrorStore();
+  let { error } = useErrorStore();
 
   return (
     <Interface

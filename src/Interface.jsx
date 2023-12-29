@@ -41,31 +41,28 @@ export default function Interface(props) {
   // Initialize paramValues state with default values from the manifest
   const [paramValues, setParamValues] = useState(() => {
     const initialParams = {};
-    manifest.parameters.forEach(group => {
-      group.params.forEach(param => {
-        initialParams[group.paramId + param.paramId] = props[group.paramId + param.paramId] ?? param.defaultValue;
-      });
+    manifest.parameters.forEach(param => {
+      initialParams[param.paramId] = props[param.paramId] ?? param.defaultValue;
     });
     return initialParams;
   });
 
   useEffect(() => {
-    manifest.parameters.forEach(group => {
-      group.params.forEach(param => {
-        const fullParamId = group.paramId + param.paramId;
-        if (props[fullParamId] !== undefined && props[fullParamId] !== paramValues[fullParamId]) {
-          setParamValues(currentValues => ({
-            ...currentValues,
-            [fullParamId]: props[fullParamId]
-          }));
-        }
-      });
+    manifest.parameters.forEach(param => {
+      const paramId = param.paramId;
+      if (props[paramId] !== undefined && props[paramId] !== paramValues[paramId]) {
+        setParamValues(currentValues => ({
+          ...currentValues,
+          [paramId]: props[paramId]
+        }));
+      }
     });
   }, [props, paramValues]);
 
-  const handleValueChange = (fullParamId, newValue) => {
-    setParamValues({ ...paramValues, [fullParamId]: newValue });
-    props.requestParamValueUpdate(fullParamId, newValue);
+
+  const handleValueChange = (paramId, newValue) => {
+    setParamValues({ ...paramValues, [paramId]: newValue });
+    props.requestParamValueUpdate(paramId, newValue);
   };
 
   const formatValueForDisplay = (value) => {
@@ -83,17 +80,18 @@ export default function Interface(props) {
     <div id='main'>
       {props.error && (<ErrorAlert message={props.error.message} reset={props.resetErrorState} />)}
       <div id='controls'>
-        {manifest.parameters.map(group => (
-          <div key={group.paramId} id={group.paramId} className="group-container">
-            <div className="group-title">{group.name}</div>
+        {/* Create a container for each parameter group */}
+        {['hpf', 'peak', 'lpf'].map(groupKey => (
+          <div key={groupKey} id={groupKey} className="group-container">
+            <div className="group-title">{groupKey.toUpperCase()}</div>
             <div className="group-params">
-              {group.params.map(param => {
-                const fullParamId = group.paramId + param.paramId;
+              {/* Filter and map parameters that belong to the current group */}
+              {manifest.parameters.filter(param => param.paramId.startsWith(groupKey)).map(param => {
                 return (
-                  <div key={fullParamId} id={fullParamId} className="flex flex-col items-center">
+                  <div key={param.paramId} id={param.paramId} className="flex flex-col items-center">
                     <Knob
-                      value={paramValues[fullParamId]}
-                      onChange={(newValue) => handleValueChange(fullParamId, newValue)}
+                      value={paramValues[param.paramId]}
+                      onChange={(newValue) => handleValueChange(param.paramId, newValue)}
                       min={param.min}
                       max={param.max}
                       precision={getPrecision(param)}
@@ -104,7 +102,7 @@ export default function Interface(props) {
                       {param.name}
                     </div>
                     <div className="text-sm text-pink-500 text-center font-light">
-                      {`${formatValueForDisplay(paramValues[fullParamId])}`}
+                      {`${formatValueForDisplay(paramValues[param.paramId])}`}
                     </div>
                   </div>
                 );
@@ -115,5 +113,6 @@ export default function Interface(props) {
       </div>
     </div>
   );
+
 
 }
