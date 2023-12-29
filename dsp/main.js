@@ -1,65 +1,54 @@
-import {Renderer, el} from '@elemaudio/core';
-import {RefMap} from './RefMap';
-import srvb from './srvb';
+import { Renderer, el } from '@elemaudio/core';
 
-
-// This project demonstrates writing a small FDN reverb effect in Elementary.
-//
-// First, we initialize a custom Renderer instance that marshals our instruction
-// batches through the __postNativeMessage__ function to direct the underlying native
-// engine.
 let core = new Renderer((batch) => {
   __postNativeMessage__(JSON.stringify(batch));
 });
 
-// Next, a RefMap for coordinating our refs
-let refs = new RefMap(core);
+function eq(bands, xn) {
+  return bands.reduce((acc, band) => {
+    let args = [band.freq, band.q];
 
-// Holding onto the previous state allows us a quick way to differentiate
-// when we need to fully re-render versus when we can just update refs
-let prevState = null;
+    if (band.hasOwnProperty('gain'))
+      args.push(band.gain);
 
-function shouldRender(prevState, nextState) {
-  return (prevState === null) || (prevState.sampleRate !== nextState.sampleRate);
+    return band.type.call(null, ...args, acc);
+  }, xn);
 }
 
-// The important piece: here we register a state change callback with the native
-// side. This callback will be hit with the current processor state any time that
-// state changes.
-//
-// Given the new state, we simply update our refs or perform a full render depending
-// on the result of our `shouldRender` check.
+const input = el.in({ channel: 0 });
+
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
 
-  if (shouldRender(prevState, state)) {
-    let stats = core.render(...srvb({
-      key: 'srvb',
-      sampleRate: state.sampleRate,
-      size: refs.getOrCreate('size', 'const', {value: state.size}, []),
-      decay: refs.getOrCreate('decay', 'const', {value: state.decay}, []),
-      mod: refs.getOrCreate('mod', 'const', {value: state.mod}, []),
-      mix: refs.getOrCreate('mix', 'const', {value: state.mix}, []),
-    }, el.in({channel: 0}), el.in({channel: 1})));
+  // Extract sub-parameters for each group
+  const hpfFreq = el.sm(el.const({ key: "hpffreq", value: state.hpfreq }));
+  const hpfOrder = parseInt(state.hpforder);
+  const peakFreq = el.sm(el.const({ key: "peakfreq", value: state.peakfreq }));
+  const peakQ = el.sm(el.const({ key: "peakq", value: state.peakq }));
+  const peakGain = el.sm(el.const({ key: "peakgain", value: state.peakgain }));
+  const lpfFreq = el.sm(el.const({ key: "lpffreq", value: state.lpffreq }));
+  const lpfOrder = parseInt(state.lpforder);
 
-    console.log(stats);
-  } else {
-    refs.update('size', {value: state.size});
-    refs.update('decay', {value: state.decay});
-    refs.update('mod', {value: state.mod});
-    refs.update('mix', {value: state.mix});
+  let bands = [];
+
+  // Add high-pass filter bands
+  for (let i = 0; i < hpfOrder; i++) {
+    bands.push({ type: el.highpass, freq: hpfFreq, q: 0.7 });
   }
 
-  prevState = state;
+  // Add peak filter band
+  bands.push({ type: el.peak, freq: peakFreq, q: peakQ, gain: peakGain });
+
+  // Add low-pass filter bands
+  for (let i = 0; i < lpfOrder; i++) {
+    bands.push({ type: el.lowpass, freq: lpfFreq, q: 0.7 });
+  }
+
+  const output = eq(bands, input);
+  core.render(output, output);
 };
 
-// NOTE: This is highly experimental and should not yet be relied on
-// as a consistent feature.
-//
-// This hook allows the native side to inject serialized graph state from
-// the running elem::Runtime instance so that we can throw away and reinitialize
-// the JavaScript engine and then inject necessary state for coordinating with
-// the underlying engine.
+
 globalThis.__receiveHydrationData__ = (data) => {
   const payload = JSON.parse(data);
   const nodeMap = core._delegate.nodeMap;

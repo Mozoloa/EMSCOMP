@@ -1,12 +1,78 @@
 {
   "window": {
-    "width": 753,
-    "height": 373
+    "width": 1280,
+    "height": 720
   },
   "parameters": [
-    { "paramId": "size",    "name": "Size",     "min": 0.0, "max": 1.0, "defaultValue": 0.5 },
-    { "paramId": "decay",   "name": "Decay",    "min": 0.0, "max": 1.0, "defaultValue": 0.5 },
-    { "paramId": "mod",     "name": "Mod",      "min": 0.0, "max": 1.0, "defaultValue": 0.5 },
-    { "paramId": "mix",     "name": "Mix",      "min": 0.0, "max": 1.0, "defaultValue": 0.5 }
+    {
+      "paramId": "hpf",
+      "name": "HPF",
+      "params": [
+        {
+          "paramId": "freq",
+          "name": "Freq",
+          "min": 10,
+          "max": 1000,
+          "defaultValue": 100,
+          "log": true
+        },
+        {
+          "paramId": "order",
+          "name": "Order",
+          "min": 0,
+          "max": 8,
+          "defaultValue": 0
+        }
+      ]
+    },
+    {
+      "paramId": "peak",
+      "name": "PEAK1",
+      "params": [
+        {
+          "paramId": "freq",
+          "name": "Freq",
+          "min": 20,
+          "max": 20000,
+          "defaultValue": 1000,
+          "log": true
+        },
+        {
+          "paramId": "q",
+          "name": "Q",
+          "min": 0.1,
+          "max": 10.0,
+          "defaultValue": 1.0
+        },
+        {
+          "paramId": "gain",
+          "name": "Gain",
+          "min": -18,
+          "max": 18,
+          "defaultValue": 0
+        }
+      ]
+    },
+    {
+      "paramId": "lpf",
+      "name": "LPF",
+      "params": [
+        {
+          "paramId": "freq",
+          "name": "LPF Freq",
+          "min": 1000,
+          "max": 20000,
+          "defaultValue": 18000,
+          "log": true
+        },
+        {
+          "paramId": "order",
+          "name": "LPF Order",
+          "min": 0,
+          "max": 8,
+          "defaultValue": 0
+        }
+      ]
+    }
   ]
 }
