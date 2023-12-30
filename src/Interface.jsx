@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import Knob from './Knob.jsx';
 import manifest from '../public/manifest.json';
+import * as gfx from './graphics.jsx';
+
 
 
 function ErrorAlert({ message, reset }) {
@@ -33,9 +35,9 @@ function ErrorAlert({ message, reset }) {
 
 export default function Interface(props) {
   const colorProps = {
-    meterColor: '#EC4899',
-    knobColor: '#FFFFFF',
-    thumbColor: '#F8FAFC',
+    meterColor: '#bb832d',
+    knobColor: '#ccc',
+    thumbColor: '#ccc',
   };
 
   // Initialize paramValues state with default values from the manifest
@@ -51,6 +53,7 @@ export default function Interface(props) {
     manifest.parameters.forEach(param => {
       const paramId = param.paramId;
       if (props[paramId] !== undefined && props[paramId] !== paramValues[paramId]) {
+        console.log(`Updating param ${paramId}: ${props[paramId]}`);
         setParamValues(currentValues => ({
           ...currentValues,
           [paramId]: props[paramId]
@@ -59,60 +62,89 @@ export default function Interface(props) {
     });
   }, [props, paramValues]);
 
-
-  const handleValueChange = (paramId, newValue) => {
-    setParamValues({ ...paramValues, [paramId]: newValue });
-    props.requestParamValueUpdate(paramId, newValue);
+  const handleValueChange = (param, newValue) => {
+    const formattedValue = formatValueFromButton(newValue, param.min, param.max, param.log);
+    setParamValues({ ...paramValues, [param.paramId]: formattedValue });
+    props.requestParamValueUpdate(param.paramId, formattedValue);
   };
 
-  const formatValueForDisplay = (value) => {
+
+  const formatValueForButton = (value, name, min, max, log) => {
+    let newValue = value;
+    if (log) {
+      newValue = Math.log(value / min) / Math.log(max / min);
+    } else {
+      newValue = (value - min) / (max - min);
+    }
+    console.log(`formatted ${name}: ${value} into ${newValue}`);
+    return newValue;
+  }
+
+  const formatValueFromButton = (value, min, max, log) => {
+    if (log) {
+      value = min * Math.pow(max / min, value);
+    } else {
+      value = value * (max - min) + min;
+    }
+    return value; // Ensure the function returns the converted value
+  }
+
+  const formatValueForDisplay = (value, paramId) => {
+    value = Math.round(value * 100) / 100;
+    // Check if it's a frequency parameter and above 1KHz
+    if (paramId.includes('freq') && value >= 1000) {
+      // Format to two decimal places for KHz range without rounding to an integer
+      return `${(value / 1000).toFixed(1)}k`;
+    }
+    if (paramId.includes('order')) {
+      if (value > 0) {
+        return value * 12;
+      }
+      return "OFF"
+    }
+
+    // For other cases, round to one decimal place
     return Math.round(value * 10) / 10;
   };
 
-  const getPrecision = (paramId) => {
-    if (paramId === 'freq' || paramId === 'hpforder') return 1; // integer values
-    if (paramId === 'q' || paramId === 'hpfq') return 0.1; // one decimal place
-    if (paramId === 'gain') return 0.5; // half steps
-    return 1; // default precision
-  };
 
   return (
     <div id='main'>
       {props.error && (<ErrorAlert message={props.error.message} reset={props.resetErrorState} />)}
       <div id='controls'>
         {/* Create a container for each parameter group */}
-        {['hpf', 'peak', 'lpf'].map(groupKey => (
-          <div key={groupKey} id={groupKey} className="group-container">
-            <div className="group-title">{groupKey.toUpperCase()}</div>
-            <div className="group-params">
-              {/* Filter and map parameters that belong to the current group */}
-              {manifest.parameters.filter(param => param.paramId.startsWith(groupKey)).map(param => {
-                return (
-                  <div key={param.paramId} id={param.paramId} className="flex flex-col items-center">
-                    <Knob
-                      value={paramValues[param.paramId]}
-                      onChange={(newValue) => handleValueChange(param.paramId, newValue)}
-                      min={param.min}
-                      max={param.max}
-                      precision={getPrecision(param)}
-                      log={param.log ?? false}
-                      {...colorProps}
-                    />
-                    <div className="text-sm text-slate-50 text-center font-light">
-                      {param.name}
+        {['hpf', 'lowshelf', 'peak1', 'peak2', 'peak3', 'highshelf', 'lpf'].map(groupKey => {
+          // Determine the SVG component key (strip numbers if 'peak')
+          const svgKey = groupKey.includes('peak') ? 'peak' : groupKey;
+          return (
+            <div key={groupKey} id={groupKey} className="group-container">
+              {gfx[svgKey] ? React.createElement(gfx[svgKey], { className: "group-gfx" }) : null}
+              <div className="group-params">
+                {/* Filter and map parameters that belong to the current group */}
+                {manifest.parameters.filter(param => param.paramId.startsWith(groupKey)).map(param => {
+                  const isOffset = param.paramId.includes('_q') || param.paramId.includes('_order');
+                  const buttonValue = formatValueForButton(paramValues[param.paramId], param.paramId, param.min, param.max, param.log);
+                  return (
+                    <div key={param.paramId} id={param.paramId} className={`group-param ${isOffset ? 'self-end' : ''}`}>
+                      <Knob
+                        value={buttonValue}
+                        onChange={(newValue) => handleValueChange(param, newValue)}
+                        name={param.name}
+                        paramId={param.paramId}
+                        {...colorProps}
+                      />
+                      <div className="param-value">
+                        {`${formatValueForDisplay(paramValues[param.paramId], param.paramId)}`}
+                      </div>
                     </div>
-                    <div className="text-sm text-pink-500 text-center font-light">
-                      {`${formatValueForDisplay(paramValues[param.paramId])}`}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
-
 
 }

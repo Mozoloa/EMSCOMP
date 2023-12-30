@@ -1,6 +1,6 @@
 # EMSEQ
 
-EMSEQ is a small digital reverb audio plugin (VST3/AU) for MacOS and Windows.
+EMSEQ is a small digital EQ plugin (VST3/AU) for MacOS and Windows.
 
 This project demonstrates one way to write an audio plugin using JavaScript and
 familiar web technologies, and while there are several variants on this approach,
@@ -46,7 +46,7 @@ Next, we fetch the EMSEQ project and its dependencies,
 
 ```bash
 # Clone the project with its submodules
-git clone --recurse-submodules https://github.com/elemaudio/emseq.git
+git clone --recurse-submodules https://github.com/Mozoloa/emseq.git
 cd emseq
 
 # Install npm dependencies

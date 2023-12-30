@@ -15,39 +15,58 @@ function eq(bands, xn) {
   }, xn);
 }
 
+
 const input = el.in({ channel: 0 });
 
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
 
-  // Extract sub-parameters for each group
-  const hpfFreq = el.sm(el.const({ key: "hpf_freq", value: state.hpf_freq }));
-  const hpfOrder = parseInt(state.hpf_order);
-  const peakFreq = el.sm(el.const({ key: "peak_freq", value: state.peak_freq }));
-  const peakQ = el.sm(el.const({ key: "peak_q", value: state.peak_q }));
-  const peakGain = el.sm(el.const({ key: "peak_gain", value: state.peak_gain }));
-  const lpfFreq = el.sm(el.const({ key: "lpf_freq", value: state.lpf_freq }));
-  const lpfOrder = parseInt(state.lpf_order);
-
   let bands = [];
 
-  // Add high-pass filter bands
-  for (let i = 0; i < hpfOrder; i++) {
-    bands.push({ type: el.highpass, freq: hpfFreq, q: 0.7 });
+  function processFilterBands(type, freq, order) {
+    const filterFreq = el.sm(el.const({ key: `${type}_freq`, value: freq }));
+    const filterOrder = parseInt(order);
+    for (let i = 0; i < filterOrder; i++) {
+      bands.push({ type, freq: filterFreq, q: 0.707 });
+    }
+  }
+  // Process high-pass filter bands
+  processFilterBands(el.highpass, state.hpf_freq, state.hpf_order);
+
+  // Process low-pass filter bands
+  processFilterBands(el.lowpass, state.lpf_freq, state.lpf_order);
+
+  Object.keys(state).forEach(key => {
+    if (key.startsWith("peak") && key.endsWith("_freq")) {
+      const bandNumber = key.split("_")[0].replace("peak", ""); // Extracts the band number, e.g., "1" from "peak1_freq"
+      const freqKey = `peak${bandNumber}_freq`;
+      const qKey = `peak${bandNumber}_q`;
+      const gainKey = `peak${bandNumber}_gain`;
+
+      const freq = el.sm(el.const({ key: freqKey, value: state[freqKey] }));
+      const q = el.sm(el.const({ key: qKey, value: state[qKey] }));
+      const gain = el.sm(el.const({ key: gainKey, value: state[gainKey] }));
+
+      bands.push({ type: el.peak, freq, q, gain });
+    }
+  });
+
+  // Process low-shelf & highshelf filter bands
+  function processShelfBands(type, freq, gain, q) {
+    const filterFreq = el.sm(el.const({ key: `${type}_freq`, value: freq }));
+    const filterGain = el.sm(el.const({ key: `${type}_gain`, value: gain }));
+    bands.push({ type, freq: filterFreq, q: q, gain: filterGain });
   }
 
-  // Add peak filter band
-  bands.push({ type: el.peak, freq: peakFreq, q: peakQ, gain: peakGain });
+  processShelfBands(el.lowshelf, state.lowshelf_freq, state.lowshelf_gain, state.lowshelf_q);
+  processShelfBands(el.highshelf, state.highshelf_freq, state.highshelf_gain, state.highshelf_q);
 
-  // Add low-pass filter bands
-  for (let i = 0; i < lpfOrder; i++) {
-    bands.push({ type: el.lowpass, freq: lpfFreq, q: 0.7 });
-  }
+
 
   const output = eq(bands, input);
-  core.render(output, output);
+  const meteredOutput = el.meter({ name: output }, output);
+  core.render(meteredOutput, meteredOutput);
 };
-
 
 globalThis.__receiveHydrationData__ = (data) => {
   const payload = JSON.parse(data);

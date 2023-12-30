@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DragBehavior from './DragBehavior';
 
-function drawKnob(ctx, width, height, value, meterColor, knobColor, thumbColor) {
+function drawKnob(ctx, width, height, value, min, max, log, meterColor, knobColor, thumbColor) {
   // Clear the canvas
   ctx.clearRect(0, 0, width, height);
+  // Calculate the knob value
+  const knobValue = log ? Math.log(value / min) / Math.log(max / min) : (value - min) / (max - min);
 
   // Draw the knob
   const hw = width * 0.5;
@@ -16,7 +18,7 @@ function drawKnob(ctx, width, height, value, meterColor, knobColor, thumbColor) 
   ctx.lineCap = 'round';
 
   const fillStart = 0.75 * Math.PI;
-  const fillEnd = fillStart + (1.5 * value * Math.PI);
+  const fillEnd = fillStart + (1.5 * knobValue * Math.PI);
 
   ctx.beginPath();
   ctx.arc(hw, hh, radius, fillStart, fillEnd, false);
@@ -41,22 +43,37 @@ function drawKnob(ctx, width, height, value, meterColor, knobColor, thumbColor) 
   ctx.fill();
 }
 
-function Knob({ name, paramId, onChange, value, meterColor, knobColor, thumbColor }) {
-  console.log("knob recieved", paramId, value)
+function Knob({ name, min, max, onChange, value, log, precision, meterColor, knobColor, thumbColor }) {
   const canvasRef = useRef();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    drawKnob(ctx, canvas.width, canvas.height, value, min, max, log, precision, meterColor, knobColor, thumbColor);
+  }, [value, min, max, log, precision, meterColor, knobColor, thumbColor]);
+
+
+
   const handleChange = (newValue) => {
-    if (onChange) {
-      onChange(newValue);
+    console.log('handleChange', newValue);
+    let finalValue;
+    if (log) {
+      finalValue = min * Math.pow(max / min, newValue);
+    } else {
+      finalValue = newValue * (max - min) + min;
     }
+    finalValue = Math.round(finalValue / precision) * precision;
+    onChange && onChange(finalValue);
   };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    drawKnob(ctx, canvas.width, canvas.height, value, meterColor, knobColor, thumbColor);
-  }, [value, meterColor, knobColor, thumbColor]);
+    drawKnob(ctx, canvas.width, canvas.height, value, min, max, log, meterColor, knobColor, thumbColor);
+  }, [value, min, max, log, precision, meterColor, knobColor, thumbColor]);
+
   return (
-    <DragBehavior onChange={handleChange} value={value} name={paramId}>
+    <DragBehavior onChange={handleChange} >
       <div id='knob-container' >
         <canvas ref={canvasRef} width="60" height="60" />
         <div id='knob-name'>{name}</div>

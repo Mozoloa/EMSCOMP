@@ -17,8 +17,6 @@ const useErrorStore = createHooks(errorStore);
 
 // Interop bindings
 function requestParamValueUpdate(paramId, value) {
-  console.log("requestParamValueUpdate :", paramId, value)
-  console.log("type of postnativemessage :", typeof globalThis.__postNativeMessage__)
   if (typeof globalThis.__postNativeMessage__ === 'function') {
     globalThis.__postNativeMessage__("setParameterValue", {
       paramId,
