@@ -18,7 +18,7 @@ juce_add_plugin(${TARGET_NAME}
   COMPANY_WEBSITE "https://www.ems.gg"
   COMPANY_EMAIL "leo@ems.gg"
   PLUGIN_MANUFACTURER_CODE Elem       # A four-character manufacturer id with at least one upper-case character
-  PLUGIN_CODE EMSEQ                    # A unique four-character plugin id with at least one upper-case character
+  PLUGIN_CODE EQLZ                    # A unique four-character plugin id with at least one upper-case character
   COPY_PLUGIN_AFTER_BUILD FALSE       # We enable this manually below after adding a copy step
   APP_SANDBOX_ENABLED TRUE
   APP_SANDBOX_OPTIONS com.apple.security.network.client com.apple.security.files.user-selected.read-write
