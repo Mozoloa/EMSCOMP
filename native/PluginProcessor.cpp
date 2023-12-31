@@ -262,9 +262,30 @@ void EffectsPluginProcessor::initJavaScriptEngine()
         return choc::value::Value();
     });
 
-    jsContext.registerFunction("__log__", [](choc::javascript::ArgumentList args) {
-        for (size_t i = 0; i < args.numArgs; ++i) {
-            DBG(choc::json::toString(*args[i], true));
+    jsContext.registerFunction("__log__", [this](choc::javascript::ArgumentList args) {
+        const auto* kDispatchScript = R"script(
+(function() {
+  console.log(...JSON.parse(%));
+  return true;
+})();
+)script";
+
+        // Forward logs to the editor if it's available; then logs show up in one place.
+        //
+        // If not available, we fall back to std out.
+        if (auto* editor = static_cast<WebViewEditor*>(getActiveEditor())) {
+            auto v = choc::value::createEmptyArray();
+
+            for (size_t i = 0; i < args.numArgs; ++i) {
+                v.addArrayElement(*args[i]);
+            }
+
+            auto expr = juce::String(kDispatchScript).replace("%", elem::js::serialize(choc::json::toString(v))).toStdString();
+            editor->getWebViewPtr()->evaluateJavascript(expr);
+        } else {
+            for (size_t i = 0; i < args.numArgs; ++i) {
+                DBG(choc::json::toString(*args[i]));
+            }
         }
 
         return choc::value::Value();
@@ -276,13 +297,13 @@ void EffectsPluginProcessor::initJavaScriptEngine()
   if (typeof globalThis.console === 'undefined') {
     globalThis.console = {
       log(...args) {
-        __log__('[log]', ...args);
+        __log__('[embedded:log]', ...args);
       },
       warn(...args) {
-          __log__('[warn]', ...args);
+          __log__('[embedded:warn]', ...args);
       },
       error(...args) {
-          __log__('[error]', ...args);
+          __log__('[embedded:error]', ...args);
       }
     };
   }
