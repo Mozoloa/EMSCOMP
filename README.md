@@ -1,6 +1,6 @@
 # EMSEQ
 
-EMSEQ is a small digital EQ plugin (VST3/AU) for MacOS and Windows.
+EMSEQ is a small digital EQ plugin (VST3/AU) for MacOS and Windows based on the [SRVB template from Elementary Audio](https://github.com/elemaudio/srvb)
 
 This project demonstrates one way to write an audio plugin using JavaScript and
 familiar web technologies, and while there are several variants on this approach,
