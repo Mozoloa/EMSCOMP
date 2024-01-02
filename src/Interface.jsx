@@ -4,8 +4,6 @@ import Knob from './Knob.jsx';
 import manifest from '../public/manifest.json';
 import * as gfx from './graphics.jsx';
 
-
-
 function ErrorAlert({ message, reset }) {
   return (
     <div className="rounded-md bg-red-50 p-4">
@@ -53,17 +51,17 @@ export default function Interface(props) {
     manifest.parameters.forEach(param => {
       const paramId = param.paramId;
       if (props[paramId] !== undefined && props[paramId] !== paramValues[paramId]) {
-        console.log(`Updating param ${paramId}: ${props[paramId]}`);
-        setParamValues(currentValues => ({
-          ...currentValues,
-          [paramId]: props[paramId]
-        }));
+/*         console.log(`Updating param ${paramId}: ${props[paramId]}`);
+ */        setParamValues(currentValues => ({
+        ...currentValues,
+        [paramId]: props[paramId]
+      }));
       }
     });
   }, [props, paramValues]);
 
   const handleValueChange = (param, newValue) => {
-    const formattedValue = formatValueFromButton(newValue, param.min, param.max, param.log);
+    const formattedValue = formatValueFromButton(newValue, param.paramId, param.min, param.max, param.log);
     setParamValues({ ...paramValues, [param.paramId]: formattedValue });
     props.requestParamValueUpdate(param.paramId, formattedValue);
   };
@@ -76,29 +74,35 @@ export default function Interface(props) {
     } else {
       newValue = (value - min) / (max - min);
     }
-    console.log(`formatted ${name}: ${value} into ${newValue}`);
+    /*     console.log(`formatted ${name}: ${value} into ${newValue}`); */
     return newValue;
   }
 
-  const formatValueFromButton = (value, min, max, log) => {
+  const formatValueFromButton = (value, paramId, min, max, log) => {
+    let newValue = value;
     if (log) {
-      value = min * Math.pow(max / min, value);
+      newValue = min * Math.pow(max / min, value);
     } else {
-      value = value * (max - min) + min;
+      newValue = value * (max - min) + min;
+    };
+    if (paramId.includes('order')) {
+      newValue = parseInt(newValue);
     }
-    return value; // Ensure the function returns the converted value
+    return newValue; // Ensure the function returns the converted value
   }
 
   const formatValueForDisplay = (value, paramId) => {
     value = Math.round(value * 100) / 100;
     // Check if it's a frequency parameter and above 1KHz
-    if (paramId.includes('freq') && value >= 1000) {
-      // Format to two decimal places for KHz range without rounding to an integer
-      return `${(value / 1000).toFixed(1)}k`;
+    if (paramId.includes('freq')) {
+      if (value >= 1000) {
+        return `${(value / 1000).toFixed(1)}k`;
+      }
+      return `${Math.round(value)}`;
     }
     if (paramId.includes('order')) {
       if (value > 0) {
-        return value * 12;
+        return parseInt(value) * 12;
       }
       return "OFF"
     }
