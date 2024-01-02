@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import DragBehavior from './DragBehavior';
 
 function drawKnob(ctx, width, height, value, meterColor, knobColor, thumbColor) {
@@ -42,7 +42,6 @@ function drawKnob(ctx, width, height, value, meterColor, knobColor, thumbColor) 
 }
 
 function Knob({ name, paramId, onChange, value, meterColor, knobColor, thumbColor }) {
-  console.log("knob recieved", paramId, value)
   const canvasRef = useRef();
   const handleChange = (newValue) => {
     if (onChange) {

@@ -1,4 +1,6 @@
+import invariant from 'invariant';
 import { el } from '@elemaudio/core';
+
 
 function eqSignal(bands, xn) {
     return bands.reduce((acc, band) => {
@@ -11,21 +13,37 @@ function eqSignal(bands, xn) {
     }, xn);
 }
 
-export default function eq(props, left, right) {
-    let bands = [];
+export default function eq(props, xl, xr) {
+    invariant(typeof props === 'object', 'Unexpected props object');
+
+    const key = props.key;
+    const sampleRate = props.sampleRate;
+    const hpf_freq = el.sm(props.hpf_freq);
+    const lpf_freq = el.sm(props.lpf_freq);
+    const lowshelf = {
+        freq: el.sm(props.lowshelf_freq),
+        gain: el.sm(props.lowshelf_gain),
+        q: el.sm(props.lowshelf_q),
+    }
+    const highshelf = {
+        freq: el.sm(props.highshelf_freq),
+        gain: el.sm(props.highshelf_gain),
+        q: el.sm(props.highshelf_q),
+    }
+    let bands = [
+        { type: el.lowshelf, freq: lowshelf.freq, gain: lowshelf.gain, q: lowshelf.q },
+        { type: el.highshelf, freq: highshelf.freq, gain: highshelf.gain, q: highshelf.q },
+    ];
 
     function processFilterBands(type, freq, order) {
-        const filterFreq = el.sm(el.const({ key: `${type}_freq`, value: freq }));
         const filterOrder = parseInt(order);
+        console.log("Filter order", filterOrder);
         for (let i = 0; i < filterOrder; i++) {
-            bands.push({ type, freq: filterFreq, q: 0.707 });
+            bands.push({ type, freq: freq, q: 0.707 });
         }
     }
-    // Process high-pass filter bands
-    processFilterBands(el.highpass, props.hpf_freq, props.hpf_order);
-
-    // Process low-pass filter bands
-    processFilterBands(el.lowpass, props.lpf_freq, props.lpf_order);
+    processFilterBands(el.highpass, hpf_freq, props.hpf_order);
+    processFilterBands(el.lowpass, lpf_freq, props.lpf_order);
 
     Object.keys(props).forEach(key => {
         if (key.startsWith("peak") && key.endsWith("_freq")) {
@@ -34,29 +52,20 @@ export default function eq(props, left, right) {
             const qKey = `peak${bandNumber}_q`;
             const gainKey = `peak${bandNumber}_gain`;
 
-            const freq = el.sm(el.const({ key: freqKey, value: props[freqKey] }));
-            const q = el.sm(el.const({ key: qKey, value: props[qKey] }));
-            const gain = el.sm(el.const({ key: gainKey, value: props[gainKey] }));
+            const freq = el.sm(props[freqKey]);
+            const q = el.sm(props[qKey]);
+            const gain = el.sm(props[gainKey]);
 
             bands.push({ type: el.peak, freq, q, gain });
         }
     });
 
-    // Process low-shelf & highshelf filter bands
-    function processShelfBands(type, freq, gain, q) {
-        const filterFreq = el.sm(el.const({ key: `${type}_freq`, value: freq }));
-        const filterGain = el.sm(el.const({ key: `${type}_gain`, value: gain }));
-        bands.push({ type, freq: filterFreq, q: q, gain: filterGain });
-    }
+    const output = eqSignal(bands, xl, xr);
 
-    processShelfBands(el.lowshelf, props.lowshelf_freq, props.lowshelf_gain, props.lowshelf_q);
-    processShelfBands(el.highshelf, props.highshelf_freq, props.highshelf_gain, props.highshelf_q);
 
-    const output = eqSignal(bands, left, right);
-
+    // Wet dry mixing
     return [
         output,
-        output
-    ]
-
+        output,
+    ];
 }

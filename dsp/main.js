@@ -3,72 +3,86 @@ import { RefMap } from './RefMap';
 import eq from './eq';
 
 
+// This project demonstrates writing a small FDN reverb effect in Elementary.
+//
+// First, we initialize a custom Renderer instance that marshals our instruction
+// batches through the __postNativeMessage__ function to direct the underlying native
+// engine.
 let core = new Renderer((batch) => {
   __postNativeMessage__(JSON.stringify(batch));
 });
 
-const refs = new RefMap(core);
+// Next, a RefMap for coordinating our refs
+let refs = new RefMap(core);
 
+// Holding onto the previous state allows us a quick way to differentiate
+// when we need to fully re-render versus when we can just update refs
 let prevState = null;
 
 function shouldRender(prevState, nextState) {
-  return (prevState === null) || (prevState.sampleRate !== nextState.sampleRate);
+  if (prevState === null || prevState.sampleRate !== nextState.sampleRate || prevState.hpf_order !== nextState.hpf_order || prevState.lpf_order !== nextState.lpf_order) {
+    console.log('Full render');
+    return true;
+  }
+}
+// This function takes the incoming state and prepares it for rendering. It only creates refs if the param is going to be used in a dsp (aka mounted), so order which is just an integer is not a dsp param and doesn't need a ref. Same with sampleRate.
+function prepProps(state, key) {
+  let newProps = {
+    key: key,
+  }
+  for (let [k, v] of Object.entries(state)) {
+    if (k === 'sampleRate' || k.includes("order")) {
+      newProps[k] = v;
+    } else {
+      newProps[k] = refs.getOrCreate(k, 'const', { value: v }, []);
+    }
+  }
+  return newProps;
 }
 
-const left = el.in({ channel: 0 });
-const right = el.in({ channel: 1 });
+function updateProps(state) {
+  for (let [k, v] of Object.entries(state)) {
+    if (k === 'sampleRate' || k.includes("order")) {
+      continue;
+    }
+    try {
+      refs.update(k, { value: v });
+      console.log(`Updatied ref '${k}' with value`, v);
+    } catch (error) {
+      console.log(`Error updating ref '${k}': '${error}'`);
+    }
+  }
+}
 
+// The important piece: here we register a state change callback with the native
+// side. This callback will be hit with the current processor state any time that
+// state changes.
+//
+// Given the new state, we simply update our refs or perform a full render depending
+// on the result of our `shouldRender` check.
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
 
   if (shouldRender(prevState, state)) {
-    let stats = core.render(eq({
-      key: 'eq',
-      sampleRate: state.sampleRate,
-      hpf_freq: refs.getOrCreate("hpf_freq", "const", { value: state.hpf_freq }, []),
-      hpf_order: refs.getOrCreate("hpf_order", "const", { value: state.hpf_order }, []),
-      lpf_freq: refs.getOrCreate("lpf_freq", "const", { value: state.lpf_freq }, []),
-      lpf_order: refs.getOrCreate("lpf_order", "const", { value: state.lpf_order }, []),
-      lowshelf_freq: refs.getOrCreate("lowshelf_freq", "const", { value: state.lowshelf_freq }, []),
-      lowshelf_gain: refs.getOrCreate("lowshelf_gain", "const", { value: state.lowshelf_gain }, []),
-      lowshelf_q: refs.getOrCreate("lowshelf_q", "const", { value: state.lowshelf_q }, []),
-      highshelf_freq: refs.getOrCreate("highshelf_freq", "const", { value: state.highshelf_freq }, []),
-      highshelf_gain: refs.getOrCreate("highshelf_gain", "const", { value: state.highshelf_gain }, []),
-      highshelf_q: refs.getOrCreate("highshelf_q", "const", { value: state.highshelf_q }, []),
-      peak1_freq: refs.getOrCreate("peak1_freq", "const", { value: state.peak1_freq }, []),
-      peak1_q: refs.getOrCreate("peak1_q", "const", { value: state.peak1_q }, []),
-      peak1_gain: refs.getOrCreate("peak1_gain", "const", { value: state.peak1_gain }, []),
-      peak2_freq: refs.getOrCreate("peak2_freq", "const", { value: state.peak2_freq }, []),
-      peak2_q: refs.getOrCreate("peak2_q", "const", { value: state.peak2_q }, []),
-      peak2_gain: refs.getOrCreate("peak2_gain", "const", { value: state.peak2_gain }, []),
-      peak3_freq: refs.getOrCreate("peak3_freq", "const", { value: state.peak3_freq }, []),
-      peak3_q: refs.getOrCreate("peak3_q", "const", { value: state.peak3_q }, []),
-      peak3_gain: refs.getOrCreate("peak3_gain", "const", { value: state.peak3_gain }, []),
-    }, left, right));
-    console.log("Render restarted with stats: ", stats);
+    const props = prepProps(state, 'eq');
+    console.log('Rendering with props', props);
+    let stats = core.render(...eq(props, el.in({ channel: 0 }), el.in({ channel: 1 })));
+    console.log("rendering", stats);
   } else {
-    refs.update("hpf_freq", { value: state.hpf_freq });
-    refs.update("hpf_order", { value: state.hpf_order });
-    refs.update("lpf_freq", { value: state.lpf_freq });
-    refs.update("lpf_order", { value: state.lpf_order });
-    refs.update("lowshelf_freq", { value: state.lowshelf_freq });
-    refs.update("lowshelf_gain", { value: state.lowshelf_gain });
-    refs.update("lowshelf_q", { value: state.lowshelf_q });
-    refs.update("highshelf_freq", { value: state.highshelf_freq });
-    refs.update("highshelf_gain", { value: state.highshelf_gain });
-    refs.update("highshelf_q", { value: state.highshelf_q });
-    refs.update("peak1_freq", { value: state.peak1_freq });
-    refs.update("peak1_q", { value: state.peak1_q });
-    refs.update("peak1_gain", { value: state.peak1_gain });
-    refs.update("peak2_freq", { value: state.peak2_freq });
-    refs.update("peak2_q", { value: state.peak2_q });
-    refs.update("peak2_gain", { value: state.peak2_gain });
-    refs.update("peak3_freq", { value: state.peak3_freq });
-    refs.update("peak3_q", { value: state.peak3_q });
-    refs.update("peak3_gain", { value: state.peak3_gain });
-  };
-}
+    console.log('Updating refs with new state', state);
+    updateProps(state);
+  }
 
+  prevState = state;
+};
+
+// NOTE: This is highly experimental and should not yet be relied on
+// as a consistent feature.
+//
+// This hook allows the native side to inject serialized graph state from
+// the running elem::Runtime instance so that we can throw away and reinitialize
+// the JavaScript engine and then inject necessary state for coordinating with
+// the underlying engine.
 globalThis.__receiveHydrationData__ = (data) => {
   const payload = JSON.parse(data);
   const nodeMap = core._delegate.nodeMap;
