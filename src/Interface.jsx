@@ -34,8 +34,7 @@ function ErrorAlert({ message, reset }) {
 export default function Interface(props) {
   const colorProps = {
     meterColor: '#bb832d',
-    knobColor: '#ccc',
-    thumbColor: '#ccc',
+    knobColor: '#050505',
   };
 
   // Initialize paramValues state with default values from the manifest
@@ -74,7 +73,7 @@ export default function Interface(props) {
     } else {
       newValue = (value - min) / (max - min);
     }
-    /*     console.log(`formatted ${name}: ${value} into ${newValue}`); */
+    /* console.log(`formatted ${name}: ${value} into ${newValue}`); */
     return newValue;
   }
 
@@ -106,27 +105,35 @@ export default function Interface(props) {
       }
       return "OFF"
     }
+    if (paramId.includes('env')) {
+      return `${Math.round(value * 10) / 10}ms`
+    }
+    if (paramId.includes('mix')) {
+      return `${Math.round(value * 100)}%`
+    }
+    if (paramId.includes('ratio')) {
+      return `${Math.round(value * 10) / 10}:1`
+    }
 
     // For other cases, round to one decimal place
     return Math.round(value * 10) / 10;
   };
-
 
   return (
     <div id='main'>
       {props.error && (<ErrorAlert message={props.error.message} reset={props.resetErrorState} />)}
       <div id='controls'>
         {/* Create a container for each parameter group */}
-        {['hpf', 'lowshelf', 'peak1', 'peak2', 'peak3', 'highshelf', 'lpf'].map(groupKey => {
+        {['comp', 'env', 'out'].map(groupKey => {
           // Determine the SVG component key (strip numbers if 'peak')
           const svgKey = groupKey.includes('peak') ? 'peak' : groupKey;
           return (
             <div key={groupKey} id={groupKey} className="group-container">
-              {gfx[svgKey] ? React.createElement(gfx[svgKey], { className: "group-gfx" }) : null}
+              {gfx[svgKey] ? React.createElement(gfx[svgKey], { className: "group-gfx" }) : groupKey.split("_")[0].toUpperCase()}
               <div className="group-params">
                 {/* Filter and map parameters that belong to the current group */}
                 {manifest.parameters.filter(param => param.paramId.startsWith(groupKey)).map(param => {
-                  const isOffset = param.paramId.includes('_q') || param.paramId.includes('_order');
+                  const isOffset = param.paramId.includes('_ratio') || param.paramId.includes('_atk') || param.paramId.includes('_mix');
                   const buttonValue = formatValueForButton(paramValues[param.paramId], param.paramId, param.min, param.max, param.log);
                   return (
                     <div key={param.paramId} id={param.paramId} className={`group-param ${isOffset ? 'self-end' : ''}`}>

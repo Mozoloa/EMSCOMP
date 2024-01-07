@@ -1,6 +1,6 @@
 import { Renderer, el } from '@elemaudio/core';
 import { RefMap } from './RefMap';
-import eq from './eq';
+import comp from './comp';
 
 
 // This project demonstrates writing a small FDN reverb effect in Elementary.
@@ -20,7 +20,7 @@ let refs = new RefMap(core);
 let prevState = null;
 
 function shouldRender(prevState, nextState) {
-  if (prevState === null || prevState.sampleRate !== nextState.sampleRate || prevState.hpf_order !== nextState.hpf_order || prevState.lpf_order !== nextState.lpf_order) {
+  if (prevState === null || prevState.sampleRate !== nextState.sampleRate) {
     console.log('Full render');
     return true;
   }
@@ -62,11 +62,10 @@ function updateProps(state) {
 // on the result of our `shouldRender` check.
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
-
   if (shouldRender(prevState, state)) {
-    const props = prepProps(state, 'eq');
+    const props = prepProps(state, 'comp');
     console.log('Rendering with props', props);
-    let stats = core.render(...eq(props, el.in({ channel: 0 }), el.in({ channel: 1 })));
+    let stats = core.render(...comp(props, el.in({ channel: 0 }), el.in({ channel: 1 })));
     console.log("rendering", stats);
   } else {
     console.log('Updating refs with new state', state);

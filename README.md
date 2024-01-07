@@ -1,6 +1,6 @@
-# EMSEQ
+# EMSCOMP
 
-EMSEQ is a small digital EQ plugin (VST3/AU) for MacOS and Windows based on the [SRVB template from Elementary Audio](https://github.com/elemaudio/srvb)
+EMSCOMP is a small digital EQ plugin (VST3/AU) for MacOS and Windows based on the [SRVB template from Elementary Audio](https://github.com/elemaudio/srvb)
 
 This project demonstrates one way to write an audio plugin using JavaScript and
 familiar web technologies, and while there are several variants on this approach,
@@ -42,12 +42,12 @@ available at the command line:
 * [Node.js](https://nodejs.org/en)
 * Bash: the build steps below expect to run scripts in a Bash environment. For Windows machines, consider running the following steps in a Git Bash environment, or with WSL.
 
-Next, we fetch the EMSEQ project and its dependencies,
+Next, we fetch the EMSCOMP project and its dependencies,
 
 ```bash
 # Clone the project with its submodules
-git clone --recurse-submodules https://github.com/Mozoloa/emseq.git
-cd emseq
+git clone --recurse-submodules https://github.com/Mozoloa/emscomp.git
+cd emscomp
 
 # Install npm dependencies
 npm install
@@ -75,7 +75,7 @@ is relocatable, thereby enabling distribution to end users.
 * After a successful build with either `npm run dev` or `npm run build`, you
   should have local plugin binaries built and copied into the correct
   audio plugin directories on your machine. If you don't see them, look in
-  `./native/build/scripted/EMSEQ_artefacts` and copy them manually
+  `./native/build/scripted/EMSCOMP_artefacts` and copy them manually
 * **Note**: the CMake build on Windows attempts to copy the VST3 plugin binary
   into `C:\Program Files`, a step that requires admin permissions. Therefore
   you should either run your build as an admin, or disable the copy plugin step

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
-project(Elem_EMSEQ VERSION 0.1.0)
+project(Elem_EMSCOMP VERSION 0.1.1)
 
 
-set(TARGET_NAME EMSEQ)
+set(TARGET_NAME EMSCOMP)
 set(ASSETS_DIR ${CMAKE_SOURCE_DIR}/../dist/)
 
 option(JUCE_ENABLE_MODULE_SOURCE_GROUPS "Enable Module Source Groups" ON)
@@ -13,12 +13,12 @@ add_subdirectory(juce)
 add_subdirectory(elementary/runtime)
 
 juce_add_plugin(${TARGET_NAME}
-  BUNDLE_ID "audio.empireaudio.emseq"
+  BUNDLE_ID "audio.empireaudio.emscomp"
   COMPANY_NAME "Empire Media Science"
   COMPANY_WEBSITE "https://www.ems.gg"
   COMPANY_EMAIL "leo@ems.gg"
   PLUGIN_MANUFACTURER_CODE Elem       # A four-character manufacturer id with at least one upper-case character
-  PLUGIN_CODE EQLZ                    # A unique four-character plugin id with at least one upper-case character
+  PLUGIN_CODE CMPR                    # A unique four-character plugin id with at least one upper-case character
   COPY_PLUGIN_AFTER_BUILD FALSE       # We enable this manually below after adding a copy step
   APP_SANDBOX_ENABLED TRUE
   APP_SANDBOX_OPTIONS com.apple.security.network.client com.apple.security.files.user-selected.read-write
