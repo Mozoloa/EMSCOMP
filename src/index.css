@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #050505;
+  --secondary-color: #121212;
+  --accent-color: #bb832d;
+  --background-color: #121212;
+  --text-color: #ccc;
+  background-color: var(--primary-color);
+  overflow: hidden;
+  user-select: none;
+}
+
+#main {
+  background-color: var(--primary-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#controls {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--primary-color);
+  padding: 15px;
+}
+
+.group-container {
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  min-width: 100px;
+  background-color: var(--background-color);
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.group-gfx {
+  width: 50px;
+  color: white;
+  stroke: var(--text-color);
+  stroke-width: 2px;
+  margin-bottom: 10px;
+}
+
+.group-params {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: baseline;
+  color: var(--accent-color);
+  font-weight: 600;
+  width: 80%;
+  height: 100%;
+}
+
+.group-param {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 30px;
+}
+
+.param-value {
+  color: var(--text-color);
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+#knob-container {
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+}
+
+#knob-name {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--accent-color);
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-align: center;
+}
