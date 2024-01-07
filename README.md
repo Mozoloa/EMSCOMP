@@ -1,6 +1,6 @@
 # EMSCOMP
 
-EMSCOMP is a small digital compression plugin (VST3/AU) for MacOS and Windows based on the [SRVB template from Elementary Audio](https://github.com/elemaudio/srvb)
+EMSCOMP is a small digital Compressor plugin (VST3/AU) for MacOS and Windows based on the [SRVB template from Elementary Audio](https://github.com/elemaudio/srvb)
 
 This project demonstrates one way to write an audio plugin using JavaScript and
 familiar web technologies, and while there are several variants on this approach,

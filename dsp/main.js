@@ -63,11 +63,9 @@ function updateProps(state) {
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
   if (shouldRender(prevState, state)) {
-    const left = el.in({ channel: 0 });
-    const right = el.in({ channel: 1 });
     const props = prepProps(state, 'comp');
     console.log('Rendering with props', props);
-    let stats = core.render(...comp(props, left, right));
+    let stats = core.render(...comp(props, el.in({ channel: 0 }), el.in({ channel: 1 })));
     console.log("rendering", stats);
   } else {
     console.log('Updating refs with new state', state);
