@@ -47,7 +47,7 @@ function updateProps(state) {
     }
     try {
       refs.update(k, { value: v });
-      console.log(`Updatied ref '${k}' with value`, v);
+      /*   console.log(`Updatied ref '${k}' with value`, v); */
     } catch (error) {
       console.log(`Error updating ref '${k}': '${error}'`);
     }
@@ -64,17 +64,27 @@ globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
   if (shouldRender(prevState, state)) {
     const props = prepProps(state, 'comp');
-    console.log('Rendering with props', props);
-    let stats = core.render(...comp(props, el.in({ channel: 0 }), el.in({ channel: 1 })));
+    console.log('Starting rendering with props:', props);
+
+    const batch = comp(props, el.in({ channel: 0 }), el.in({ channel: 1 }));
+    let stats = core.render(
+      el.meter({ name: 'left' }, batch[0]),
+      el.meter({ name: 'right' }, batch[1])
+    );
     console.log("rendering", stats);
   } else {
-    console.log('Updating refs with new state', state);
+    /* console.log('Updating refs with new state', state); */
     updateProps(state);
   }
 
   prevState = state;
 };
 
+core.on('meter', function (meter) {
+  if (meter.source === 'left' || meter.source === 'right') {
+    console.log(meter);
+  }
+});
 // NOTE: This is highly experimental and should not yet be relied on
 // as a consistent feature.
 //

@@ -9,30 +9,39 @@ function compress(atkMs, relMs, threshold, ratio, kneeWidth, sidechain, xn) {
     );
 
     const envDecibels = el.gain2db(env);
+
+    // Calculate the soft knee bounds around the threshold
     const lowerKneeBound = el.sub(threshold, el.div(kneeWidth, 2)); // threshold - kneeWidth/2
     const upperKneeBound = el.add(threshold, el.div(kneeWidth, 2)); // threshold + kneeWidth/2
 
+    // Check if the envelope is in the soft knee range
     const isInSoftKneeRange = el.and(
         el.geq(envDecibels, lowerKneeBound), // envDecibels >= lowerKneeBound
         el.leq(envDecibels, upperKneeBound), // envDecibels <= upperKneeBound
     );
 
-    const adjustedRatio = el.sub(1, el.div(1, ratio)); // 1 - 1/ratio
+    // Calculate gain multiplier from the ratio (1 - 1/ratio)
+    const adjustedRatio = el.sub(1, el.div(1, ratio));
 
-    // Gain calculation
+    /* Gain calculation
+    * When in soft knee range, do : 
+    * 0.5 * adjustedRatio * ((envDecibels - lowerKneeBound) / kneeWidth) * (lowerKneeBound - envDecibels)
+    * Else do :
+    * adjustedRatio * (threshold - envDecibels)
+    */
     const gain = el.select(
         isInSoftKneeRange,
         el.mul(
-            el.mul(adjustedRatio, 0.5),
+            el.div(adjustedRatio, 2),
             el.mul(
                 el.div(el.sub(envDecibels, lowerKneeBound), kneeWidth),
                 el.sub(lowerKneeBound, envDecibels)
             )
-        ), // 0.5 * adjustedRatio * ((envDecibels - lowerKneeBound) / kneeWidth) * (lowerKneeBound - envDecibels)
+        ),
         el.mul(
             adjustedRatio,
             el.sub(threshold, envDecibels)
-        ) // adjustedRatio * (threshold - envDecibels)
+        )
     );
 
     // Ensuring gain is not positive
@@ -74,12 +83,15 @@ export default function comp(props, left, right) {
     const relMs = el.sm(props.env_rel);
     const out_gain = el.sm(props.out_gain);
     const mix = el.sm(props.out_mix);
-    const comp = compress(atkMs, relMs, threshold, ratio, kneeWidth, filteredSidechain, left);
-    const output = el.mul(el.db2gain(out_gain), comp);
-    const mixedOutput = el.select(mix, output, left)
+    const compL = compress(atkMs, relMs, threshold, ratio, kneeWidth, filteredSidechain, left);
+    const compR = compress(atkMs, relMs, threshold, ratio, kneeWidth, filteredSidechain, right);
+    const outputL = el.mul(el.db2gain(out_gain), compL);
+    const outputR = el.mul(el.db2gain(out_gain), compR);
+    const mixedOutputL = el.select(mix, outputL, left);
+    const mixedOutputR = el.select(mix, outputR, right)
     // Wet dry mixing
     return [
-        mixedOutput,
-        mixedOutput,
+        mixedOutputL,
+        mixedOutputR,
     ];
 }

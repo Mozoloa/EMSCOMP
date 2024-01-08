@@ -6,10 +6,11 @@
   "parameters": [
     {
       "paramId": "comp_threshold",
-      "name": "Thr",
+      "name": "Threshold",
       "min": -60.0,
       "max": 0.0,
-      "defaultValue": 0.0
+      "defaultValue": -30,
+      "hue": 200
     },
     {
       "paramId": "comp_ratio",
@@ -24,11 +25,12 @@
       "name": "Knee",
       "min": 1,
       "max": 24,
-      "defaultValue": 12
+      "defaultValue": 12,
+      "hue": 200
     },
     {
       "paramId": "env_hpf_freq",
-      "name": "Filter",
+      "name": "SC Filter",
       "min": 20,
       "max": 1000,
       "defaultValue": 20,
@@ -55,7 +57,8 @@
       "name": "Gain",
       "min": -20.0,
       "max": 20.0,
-      "defaultValue": 0.0
+      "defaultValue": 0.0,
+      "hue": 200
     },
     {
       "paramId": "out_mix",

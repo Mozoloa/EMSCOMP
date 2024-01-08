@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import Knob from './Knob.jsx';
+import CompGraph from './CompGraph.jsx';
 import manifest from '../public/manifest.json';
 import * as gfx from './graphics.jsx';
 
@@ -32,11 +33,6 @@ function ErrorAlert({ message, reset }) {
 }
 
 export default function Interface(props) {
-  const colorProps = {
-    meterColor: '#bb832d',
-    knobColor: '#050505',
-  };
-
   // Initialize paramValues state with default values from the manifest
   const [paramValues, setParamValues] = useState(() => {
     const initialParams = {};
@@ -95,9 +91,9 @@ export default function Interface(props) {
     // Check if it's a frequency parameter and above 1KHz
     if (paramId.includes('freq')) {
       if (value >= 1000) {
-        return `${(value / 1000).toFixed(1)}k`;
+        return `${(value / 1000).toFixed(1)}KHz`;
       }
-      return `${Math.round(value)}`;
+      return `${Math.round(value)}Hz`;
     }
     if (paramId.includes('order')) {
       if (value > 0) {
@@ -114,6 +110,9 @@ export default function Interface(props) {
     if (paramId.includes('ratio')) {
       return `${Math.round(value * 10) / 10}:1`
     }
+    if (paramId.includes('gain') || paramId.includes('knee') || paramId.includes('threshold')) {
+      return `${Math.round(value * 10) / 10}dB`
+    }
 
     // For other cases, round to one decimal place
     return Math.round(value * 10) / 10;
@@ -123,28 +122,42 @@ export default function Interface(props) {
     <div id='main'>
       {props.error && (<ErrorAlert message={props.error.message} reset={props.resetErrorState} />)}
       <div id='controls'>
+        <div className='group-container'>
+          <div id='graphContainer'>
+            <CompGraph
+              threshold={props.comp_threshold}
+              ratio={props.comp_ratio}
+              knee={props.comp_knee}
+            />
+          </div>
+        </div>
         {/* Create a container for each parameter group */}
         {['comp', 'env', 'out'].map(groupKey => {
           // Determine the SVG component key (strip numbers if 'peak')
           const svgKey = groupKey.includes('peak') ? 'peak' : groupKey;
           return (
             <div key={groupKey} id={groupKey} className="group-container">
-              {gfx[svgKey] ? React.createElement(gfx[svgKey], { className: "group-gfx" }) : groupKey.split("_")[0].toUpperCase()}
+              {gfx[svgKey] ? React.createElement(gfx[svgKey], { className: "group-gfx" }) : ""}
               <div className="group-params">
                 {/* Filter and map parameters that belong to the current group */}
                 {manifest.parameters.filter(param => param.paramId.startsWith(groupKey)).map(param => {
                   const isOffset = param.paramId.includes('_ratio') || param.paramId.includes('_atk') || param.paramId.includes('_mix');
                   const buttonValue = formatValueForButton(paramValues[param.paramId], param.paramId, param.min, param.max, param.log);
+                  const buttonDefaultValue = formatValueForButton(param.defaultValue, param.paramId, param.min, param.max, param.log);
+                  const accentColor = param.hue ? `hsl(${param.hue},100%, 60%)` : '#ccc';
                   return (
                     <div key={param.paramId} id={param.paramId} className={`group-param ${isOffset ? 'self-end' : ''}`}>
+                      <div id='knob-name'>{param.name}</div>
                       <Knob
                         value={buttonValue}
+                        defaultValue={buttonDefaultValue}
                         onChange={(newValue) => handleValueChange(param, newValue)}
                         name={param.name}
                         paramId={param.paramId}
-                        {...colorProps}
+                        accentColor={accentColor}
+                        knobColor="#050505"
                       />
-                      <div className="param-value">
+                      <div className="param-value" style={{ color: accentColor }}>
                         {`${formatValueForDisplay(paramValues[param.paramId], param.paramId)}`}
                       </div>
                     </div>
@@ -155,7 +168,7 @@ export default function Interface(props) {
           );
         })}
       </div>
-    </div>
+    </div >
   );
 
 }
