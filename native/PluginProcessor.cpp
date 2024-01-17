@@ -20,7 +20,6 @@ juce::File getAssetsDirectory()
 #error "We only support Mac and Windows here yet."
 #endif
 
-    jassert(assetsDir.isDirectory());
     return assetsDir;
 }
 
@@ -37,11 +36,11 @@ EffectsPluginProcessor::EffectsPluginProcessor()
     auto manifestFileContents = manifestFile.readEntireTextStream().toStdString();
 #else
     auto manifestFile = getAssetsDirectory().getChildFile("manifest.json");
-    std::string manifestFileContents;
 
-    if (manifestFile.existsAsFile()) {
-        manifestFileContents = manifestFile.loadFileAsString().toStdString();
-    }
+    if (!manifestFile.existsAsFile())
+        return;
+
+    auto manifestFileContents = manifestFile.loadFileAsString().toStdString();
 #endif
 
     auto manifest = elem::js::parseJSON(manifestFileContents);
@@ -218,6 +217,11 @@ void EffectsPluginProcessor::handleAsyncUpdate()
         // TODO: This is definitely not thread-safe! It could delete a Runtime instance while
         // the real-time thread is using it. Depends on when the host will call prepareToPlay.
         runtime = std::make_unique<elem::Runtime<float>>(lastKnownSampleRate, lastKnownBlockSize);
+
+        eventsTimer = std::make_unique<LambdaTimer<std::function<void()>>>(60, [this]() {
+            dispatchGraphEvents();
+        });
+
         initJavaScriptEngine();
     }
 
@@ -265,13 +269,30 @@ void EffectsPluginProcessor::initJavaScriptEngine()
     });
 
     jsContext.registerFunction("__log__", [this](choc::javascript::ArgumentList args) {
-        auto v = choc::value::createEmptyArray();
+        const auto* kDispatchScript = R"script(
+(function() {
+  console.log(...JSON.parse(%));
+  return true;
+})();
+)script";
 
-        for (size_t i = 0; i < args.numArgs; ++i) {
-            v.addArrayElement(*args[i]);
+        // Forward logs to the editor if it's available; then logs show up in one place.
+        //
+        // If not available, we fall back to std out.
+        if (auto* editor = static_cast<WebViewEditor*>(getActiveEditor())) {
+            auto v = choc::value::createEmptyArray();
+
+            for (size_t i = 0; i < args.numArgs; ++i) {
+                v.addArrayElement(*args[i]);
+            }
+
+            auto expr = juce::String(kDispatchScript).replace("%", elem::js::serialize(choc::json::toString(v))).toStdString();
+            editor->getWebViewPtr()->evaluateJavascript(expr);
+        } else {
+            for (size_t i = 0; i < args.numArgs; ++i) {
+                DBG(choc::json::toString(*args[i]));
+            }
         }
-
-        logEmbeddedMessage(choc::json::toString(v));
 
         return choc::value::Value();
     });
@@ -301,14 +322,13 @@ void EffectsPluginProcessor::initJavaScriptEngine()
     auto dspEntryFileContents = dspEntryFile.readEntireTextStream().toStdString();
 #else
     auto dspEntryFile = getAssetsDirectory().getChildFile("dsp.main.js");
+
+    if (!dspEntryFile.existsAsFile())
+        return;
+
     auto dspEntryFileContents = dspEntryFile.loadFileAsString().toStdString();
 #endif
-    try {
-        jsContext.evaluate(dspEntryFileContents);
-    } catch (choc::javascript::Error const& e) {
-        // TODO: Something like this... need to fix the serialization
-        logEmbeddedMessage(std::string(e.what()));
-    }
+    jsContext.evaluate(dspEntryFileContents);
 
     // Re-hydrate from current state
     const auto* kHydrateScript = R"script(
@@ -316,12 +336,7 @@ void EffectsPluginProcessor::initJavaScriptEngine()
   if (typeof globalThis.__receiveHydrationData__ !== 'function')
     return false;
 
-  try {
-    globalThis.__receiveHydrationData__(%);
-  } catch (e) {
-    console.error(e.name, e.message);
-  }
-
+  globalThis.__receiveHydrationData__(%);
   return true;
 })();
 )script";
@@ -337,12 +352,7 @@ void EffectsPluginProcessor::dispatchStateChange()
   if (typeof globalThis.__receiveStateChange__ !== 'function')
     return false;
 
-  try {
-    globalThis.__receiveStateChange__(%);
-  } catch (e) {
-    console.error(e.name, e.message);
-  }
-
+  globalThis.__receiveStateChange__(%);
   return true;
 })();
 )script";
@@ -366,6 +376,35 @@ void EffectsPluginProcessor::dispatchStateChange()
     jsContext.evaluate(expr);
 }
 
+void EffectsPluginProcessor::dispatchGraphEvents()
+{
+    const auto* kDispatchScript = R"script(
+(function() {
+  if (typeof globalThis.__receiveGraphEvents__ !== 'function')
+    return false;
+
+  globalThis.__receiveGraphEvents__(%);
+  return true;
+})();
+)script";
+
+    if (runtime) {
+        elem::js::Array batch;
+
+        runtime->processQueuedEvents([this, &batch](std::string const& type, elem::js::Value evt) {
+            batch.push_back(elem::js::Object({
+                {"type", type},
+                {"event", evt}
+            }));
+        });
+
+        if (auto* editor = static_cast<WebViewEditor*>(getActiveEditor())) {
+            auto expr = juce::String(kDispatchScript).replace("%", elem::js::serialize(elem::js::serialize(batch))).toStdString();
+            editor->getWebViewPtr()->evaluateJavascript(expr);
+        }
+    }
+}
+
 void EffectsPluginProcessor::dispatchError(std::string const& name, std::string const& message)
 {
     const auto* kDispatchScript = R"script(
@@ -376,12 +415,7 @@ void EffectsPluginProcessor::dispatchError(std::string const& name, std::string 
   let e = new Error(%);
   e.name = @;
 
-  try {
-    globalThis.__receiveError__(e);
-  } catch (e) {
-    console.error(e.name, e.message);
-  }
-
+  globalThis.__receiveError__(e);
   return true;
 })();
 )script";
@@ -398,23 +432,6 @@ void EffectsPluginProcessor::dispatchError(std::string const& name, std::string 
     // Next we dispatch to the local engine which will evaluate any necessary JavaScript synchronously
     // here on the main thread
     jsContext.evaluate(expr);
-}
-
-//==============================================================================
-void EffectsPluginProcessor::logEmbeddedMessage(std::string const& serializedMessage)
-{
-    const auto* kDispatchScript = R"script(
-(function() {
-  console.log(...JSON.parse(%));
-  return true;
-})();
-)script";
-
-    // Forward logs to the editor if it's available; then all logs show up in one place.
-    if (auto* editor = static_cast<WebViewEditor*>(getActiveEditor())) {
-        auto expr = juce::String(kDispatchScript).replace("%", elem::js::serialize(serializedMessage)).toStdString();
-        editor->getWebViewPtr()->evaluateJavascript(expr);
-    }
 }
 
 //==============================================================================

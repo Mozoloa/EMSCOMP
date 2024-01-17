@@ -1,16 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 
-function drawCompressorGraph(ctx, divWidth, divHeight, threshold, ratio, knee) {
+function drawCompressorGraph(ctx, divWidth, divHeight, threshold, ratio, knee, events) {
     const size = Math.min(divWidth, divHeight); // selects the smaller of the two dimensions
     // Clear the canvas
     ctx.clearRect(0, 0, size, size);
 
-    const padding = 10;
+    const padding = 0;
     const lowerBound = -60; // Lower bound for threshold in db
     // normalize knee (1 to 24) to be between 0 and 1 compared to graph range
     const normalizedKnee = knee / (-lowerBound);
     const halfKnee = normalizedKnee / 2;
-    const kneeOffset = halfKnee * (size - 20);
+    const kneeOffset = halfKnee * (size - padding * 2);
     const curveRange = size - padding * 2;
     // normalize threshold( -inf to 0) to be between 0 and 1
     const normalizedThreshold = (threshold - lowerBound) / -lowerBound
@@ -62,11 +62,11 @@ function drawCompressorGraph(ctx, divWidth, divHeight, threshold, ratio, knee) {
     ctx.lineTo(size - padding, origin.x);
     ctx.stroke();
 
-    ctx.strokeStyle = "#ccc";
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-
     // Draw Initial Line
+    ctx.strokeStyle = "#ccc";
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'none';
+
     ctx.beginPath();
     ctx.moveTo(Math.min(origin.x, lowerThresholdPoint.x), Math.max(origin.y, lowerThresholdPoint.y));
     ctx.lineTo(lowerThresholdPoint.x, lowerThresholdPoint.y);
@@ -93,18 +93,16 @@ function drawCompressorGraph(ctx, divWidth, divHeight, threshold, ratio, knee) {
     ctx.stroke();
 }
 
-function CompGraph({ threshold, ratio, knee }) {
+function CompGraph({ threshold, ratio, knee, events }) {
     const canvasRef = useRef();
-
     useEffect(() => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        drawCompressorGraph(ctx, canvas.width, canvas.height, threshold, ratio, knee);
-    }, [threshold, ratio, knee]);
+        drawCompressorGraph(ctx, canvas.width, canvas.height, threshold, ratio, knee, events);
+    }, [threshold, ratio, knee, events]);
     return (
-        <div id='knob-container' >
+        <div id='graph-container' >
             <canvas ref={canvasRef} width="200" height="200" />
-            <div id='knob-name'>{name}</div>
         </div>
     );
 }

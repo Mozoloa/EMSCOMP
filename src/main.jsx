@@ -15,6 +15,9 @@ const useStore = createHooks(store);
 const errorStore = createStore(() => ({ error: null }));
 const useErrorStore = createHooks(errorStore);
 
+const eventStore = createStore(() => { });
+const useEventStore = createHooks(eventStore);
+
 // Interop bindings
 function requestParamValueUpdate(paramId, value) {
   if (typeof globalThis.__postNativeMessage__ === 'function') {
@@ -39,6 +42,15 @@ globalThis.__receiveStateChange__ = function (state) {
   store.setState(JSON.parse(state));
 };
 
+globalThis.__receiveGraphEvents__ = function (eventBatch) {
+  const batch = JSON.parse(eventBatch);
+  if (batch.length > 0) {
+    const map = batch.reduce((acc, event) => { acc[event.event.source] = event; return acc; }, {});
+    /*     console.log(map); */
+    eventStore.setState(map);
+  }
+};
+
 globalThis.__receiveError__ = (err) => {
   errorStore.setState({ error: err });
 };
@@ -47,11 +59,13 @@ globalThis.__receiveError__ = (err) => {
 function App(props) {
   let state = useStore();
   let { error } = useErrorStore();
+  let events = useEventStore();
 
   return (
     <Interface
       {...state}
       error={error}
+      events={events}
       requestParamValueUpdate={requestParamValueUpdate}
       resetErrorState={() => errorStore.setState({ error: null })} />
   );

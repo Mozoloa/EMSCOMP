@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import Knob from './Knob.jsx';
 import CompGraph from './CompGraph.jsx';
+import DecibelMeter from './DecibelMeter.jsx';
 import manifest from '../public/manifest.json';
 import * as gfx from './graphics.jsx';
 
@@ -33,6 +34,7 @@ function ErrorAlert({ message, reset }) {
 }
 
 export default function Interface(props) {
+
   // Initialize paramValues state with default values from the manifest
   const [paramValues, setParamValues] = useState(() => {
     const initialParams = {};
@@ -104,13 +106,13 @@ export default function Interface(props) {
     if (paramId.includes('env')) {
       return `${Math.round(value * 10) / 10}ms`
     }
-    if (paramId.includes('mix')) {
+    if (paramId.includes('drywet')) {
       return `${Math.round(value * 100)}%`
     }
     if (paramId.includes('ratio')) {
       return `${Math.round(value * 10) / 10}:1`
     }
-    if (paramId.includes('gain') || paramId.includes('knee') || paramId.includes('threshold')) {
+    if (paramId.includes('Gain') || paramId.includes('knee') || paramId.includes('threshold')) {
       return `${Math.round(value * 10) / 10}dB`
     }
 
@@ -123,16 +125,40 @@ export default function Interface(props) {
       {props.error && (<ErrorAlert message={props.error.message} reset={props.resetErrorState} />)}
       <div id='controls'>
         <div className='group-container'>
-          <div id='graphContainer'>
-            <CompGraph
-              threshold={props.comp_threshold}
-              ratio={props.comp_ratio}
-              knee={props.comp_knee}
-            />
-          </div>
+          {/* Input signal meter */}
+          <DecibelMeter
+            event={props.events.comp_input}
+            invert={false}
+          />
+
+          {/* Env signal meter */}
+          <DecibelMeter
+            event={props.events.comp_env}
+          />
+
+          {/* Compression curve graph */}
+          <CompGraph
+            threshold={props.comp_threshold}
+            ratio={props.comp_ratio}
+            knee={props.comp_knee}
+            events={props.events}
+          />
+
+          {/* Gain Reduction meter */}
+          <DecibelMeter
+            event={props.events.comp_gr}
+            invert={true}
+          />
+
+          {/* Output signal meter */}
+          <DecibelMeter
+            event={props.events.comp_output}
+            invert={false}
+          />
+
         </div>
         {/* Create a container for each parameter group */}
-        {['comp', 'env', 'out'].map(groupKey => {
+        {['comp', 'env', 'mix'].map(groupKey => {
           // Determine the SVG component key (strip numbers if 'peak')
           const svgKey = groupKey.includes('peak') ? 'peak' : groupKey;
           return (
