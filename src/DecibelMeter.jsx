@@ -1,41 +1,53 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-function DecibelMeter({ event, invert }) {
-    let roundedMax = null; // Initialize the variable at a higher scope
-    let overload = false;
-    if (!event?.event) {
-        console.log('no event');
-    } else {
-        const meterName = event.event.source;
+function DecibelMeter({ event, invert, decay }) {
+    const [meterValue, setMeterValue] = useState(0); // Current meter value
+    const [overload, setOverload] = useState(false); // Overload state
+    const prevValueRef = useRef(0); // Ref to store previous meter value
+    decay = decay || 0;
+
+    useEffect(() => {
+        if (!event?.event) {
+            console.log('No event received');
+            return;
+        }
+
         let max = event.event.max;
+        let isOverloaded = false;
         if (max > 1) {
             max = 1;
-            overload = true;
+            isOverloaded = true;
         }
-        // Turn the max into dbfs
+
         const logMax = Math.max(20 * Math.log10(max), -60);
-        // Normalize the dbfs to be between 0 and 1
         let normalizedMax = (logMax + 60) / 60;
         if (invert) {
             normalizedMax = 1 - normalizedMax;
         }
-        // Round to 1 decimal place
-        roundedMax = Math.round(normalizedMax * 1000) / 10;
-        /*console.log(meterName, "dbfs:", logMax, `${roundedMax}%`, max, "overload", overload);*/
-    }
 
-    useEffect(() => {
-        // Your effect logic here
+
+        if (normalizedMax < prevValueRef.current && decay > 0) {
+            // Apply decay
+            const decayedValue = prevValueRef.current * decay;
+            console.log('Applying decay to meter value', prevValueRef.current, decayedValue, decay);
+            setMeterValue(decayedValue);
+        } else {
+            setMeterValue(normalizedMax);
+        }
+
+        setOverload(isOverloaded);
+        prevValueRef.current = normalizedMax;
     }, [event]);
 
-    // Define style object for meter
+
+    const roundedMax = Math.round(meterValue * 1000) / 10;
+
     const meterStyle = {
         height: `${roundedMax}%`,
         bottom: invert ? 'auto' : '0'
     };
 
     const overlayClass = invert ? 'gr' : 'signal';
-
     const overloadClass = overload ? 'overload' : 'overload-safe';
 
     return (

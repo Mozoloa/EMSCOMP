@@ -129,6 +129,7 @@ export default function Interface(props) {
           <DecibelMeter
             event={props.events.comp_input}
             invert={false}
+            decay={1}
           />
 
           {/* Env signal meter */}
