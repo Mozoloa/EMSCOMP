@@ -1,10 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function DecibelMeter({ event, invert, decay }) {
+function DecibelMeter({ event, type, direction, range, invert, girth }) {
     const [meterValue, setMeterValue] = useState(0); // Current meter value
     const [overload, setOverload] = useState(false); // Overload state
     const prevValueRef = useRef(0); // Ref to store previous meter value
-    decay = decay || 0;
+    let decay = 0;
+    !range && (range = 60);
+
+    switch (type) {
+        case 'gr':
+            decay = 1;
+            invert = true;
+            break;
+        case 'output':
+            decay = 1;
+            break;
+        case 'input':
+            decay = 1;
+            break;
+        default:
+            break;
+    }
 
     useEffect(() => {
         if (!event?.event) {
@@ -19,43 +35,56 @@ function DecibelMeter({ event, invert, decay }) {
             isOverloaded = true;
         }
 
-        const logMax = Math.max(20 * Math.log10(max), -60);
-        let normalizedMax = (logMax + 60) / 60;
+        const logMax = Math.max(20 * Math.log10(max), range * -1);
+        let normalizedMax = (logMax + range) / range;
         if (invert) {
             normalizedMax = 1 - normalizedMax;
         }
 
-
         if (normalizedMax < prevValueRef.current && decay > 0) {
             // Apply decay
             const decayedValue = prevValueRef.current * decay;
-            console.log('Applying decay to meter value', prevValueRef.current, decayedValue, decay);
             setMeterValue(decayedValue);
         } else {
             setMeterValue(normalizedMax);
         }
-
         setOverload(isOverloaded);
         prevValueRef.current = normalizedMax;
     }, [event]);
 
 
     const roundedMax = Math.round(meterValue * 1000) / 10;
-
-    const meterStyle = {
-        height: `${roundedMax}%`,
-        bottom: invert ? 'auto' : '0'
+    /* const roundedMax = 50; */
+    let meterContainerStyle = {
+        width: `${girth}px`,
+        height: '100%',
     };
+    let meterValueStyle = {
+        height: `${roundedMax}%`,
+        width: '100%',
+        bottom: invert ? 'auto' : '0',
+    };
+    if (direction === 'horizontal') {
+        meterValueStyle = {
+            width: `${roundedMax}%`,
+            height: '100%',
+            right: invert ? '0' : 'auto',
+        };
+        meterContainerStyle = {
+            width: '100%',
+            height: `${girth}px`,
+        };
+    }
 
-    const overlayClass = invert ? 'gr' : 'signal';
+    const overlayClass = `${type}-signal`
     const overloadClass = overload ? 'overload' : 'overload-safe';
 
     return (
-        <div id='meter-container'>
-            <div id='meter-value' style={meterStyle}></div>
+        <div id='meter-container' style={meterContainerStyle} >
+            <div id='meter-value' style={meterValueStyle}></div>
             <div id='meter-overlay' className={overlayClass}></div>
             <div id='meter-overload' className={overloadClass}></div>
-        </div>
+        </div >
     );
 }
 

@@ -13,11 +13,11 @@ function eqSignal(bands, xn) {
 }
 
 function skcompress(atkMs, relMs, threshold, ratio, kneeWidth, sidechain, xn) {
-    const env = el.env(
+    const env = el.meter({ name: "comp_env" }, el.env(
         el.tau2pole(el.mul(0.001, atkMs)),
         el.tau2pole(el.mul(0.001, relMs)),
         sidechain,
-    );
+    ));
 
     const envDecibels = el.gain2db(env);
 
@@ -78,8 +78,8 @@ export default function comp(props, left, right) {
     const in_gain = el.sm(props.mix_inGain);
     const leftAmped = el.mul(el.db2gain(in_gain), left);
     const rightAmped = el.mul(el.db2gain(in_gain), right);
-    const leftSC = el.meter({ name: "comp_envL" }, eqSignal(bands, leftAmped));
-    const rightSC = el.meter({ name: "comp_envR" }, eqSignal(bands, rightAmped));
+    const leftSC = eqSignal(bands, leftAmped);
+    const rightSC = eqSignal(bands, rightAmped);
     const threshold = el.sm(props.comp_main_threshold);
     const ratio = el.sm(props.comp_main_ratio);
     const kneeWidth = el.sm(props.comp_main_knee);

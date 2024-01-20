@@ -5,7 +5,7 @@
   },
   "parameters": [
     {
-      "paramId": "comp_threshold",
+      "paramId": "comp_main_threshold",
       "name": "Threshold",
       "min": -60.0,
       "max": 0.0,
@@ -13,7 +13,7 @@
       "hue": 200
     },
     {
-      "paramId": "comp_ratio",
+      "paramId": "comp_main_ratio",
       "name": "Ratio",
       "min": 1.0,
       "max": 100,
@@ -21,7 +21,7 @@
       "log": true
     },
     {
-      "paramId": "comp_knee",
+      "paramId": "comp_main_knee",
       "name": "Knee",
       "min": 1,
       "max": 24,

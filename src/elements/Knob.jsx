@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import DragBehavior from './DragBehavior';
+import DragBehavior from '../DragBehavior';
+
+import './Knob.css';
 
 function drawKnob(ctx, width, height, value, accentColor, knobColor) {
   // Clear the canvas
@@ -79,13 +81,13 @@ function drawKnob(ctx, width, height, value, accentColor, knobColor) {
 
   // Meter
   ctx.strokeStyle = accentColor;
-  ctx.lineWidth = Math.round(lineWidth * .8);
+  ctx.lineWidth = Math.round(lineWidth * 0.7);
   ctx.lineCap = 'round';
 
   const KnobStart = 0.75 * Math.PI;
   const KnobEnd = KnobStart + (1.5 * value * Math.PI);
   ctx.beginPath();
-  ctx.arc(hw, hh, radius * 1.07, KnobStart, KnobEnd, false);
+  ctx.arc(hw, hh, radius * 1.1, KnobStart, KnobEnd, false);
   ctx.stroke();
 
   // Value Line
@@ -95,13 +97,12 @@ function drawKnob(ctx, width, height, value, accentColor, knobColor) {
   const pointerEndY = hh + 0.80 * radius * Math.sin(KnobEnd);
 
   ctx.strokeStyle = "#ccc";
-  ctx.lineWidth = lineWidth * 0.6;
+  ctx.lineWidth = lineWidth * 0.5;
   ctx.lineCap = 'round';
 
   ctx.beginPath();
   ctx.moveTo(pointerStartX, pointerStartY);
   ctx.lineTo(pointerEndX, pointerEndY);
-  //shadow that applies to the line
 
   ctx.stroke();
 }
@@ -132,7 +133,7 @@ function Knob({ name, paramId, onChange, value, defaultValue, accentColor, knobC
   return (
     <DragBehavior onChange={handleChange} value={value} name={paramId}>
       <div id='knob-container' >
-        <canvas ref={canvasRef} width="100" height="100" />
+        <canvas ref={canvasRef} width="80" height="80" />
       </div>
     </DragBehavior>
   );

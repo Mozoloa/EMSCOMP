@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid'
-import Knob from './Knob.jsx';
-import CompGraph from './CompGraph.jsx';
-import DecibelMeter from './DecibelMeter.jsx';
+import { XCircleIcon, XMarkIcon } from '@heroicons/react/20/solid';
+import CompBlock from './channelStrip/CompBlock.jsx';
+import ExpBlock from './channelStrip/ExpBlock.jsx';
+import Knob from './elements/Knob.jsx';
+import ScaledMeter from './elements/ScaledMeter.jsx';
 import manifest from '../public/manifest.json';
 import * as gfx from './graphics.jsx';
+import * as Util from './Utilities.js';
 
 function ErrorAlert({ message, reset }) {
   return (
@@ -58,142 +60,58 @@ export default function Interface(props) {
   }, [props, paramValues]);
 
   const handleValueChange = (param, newValue) => {
-    const formattedValue = formatValueFromButton(newValue, param.paramId, param.min, param.max, param.log);
+    const formattedValue = Util.formatValueFromButton(newValue, param.paramId, param.min, param.max, param.log);
     setParamValues({ ...paramValues, [param.paramId]: formattedValue });
     props.requestParamValueUpdate(param.paramId, formattedValue);
   };
 
-
-  const formatValueForButton = (value, name, min, max, log) => {
-    let newValue = value;
-    if (log) {
-      newValue = Math.log(value / min) / Math.log(max / min);
-    } else {
-      newValue = (value - min) / (max - min);
-    }
-    /* console.log(`formatted ${name}: ${value} into ${newValue}`); */
-    return newValue;
+  if (!props.events) {
+    console.log('No events received');
+    return null;
   }
-
-  const formatValueFromButton = (value, paramId, min, max, log) => {
-    let newValue = value;
-    if (log) {
-      newValue = min * Math.pow(max / min, value);
-    } else {
-      newValue = value * (max - min) + min;
-    };
-    if (paramId.includes('order')) {
-      newValue = parseInt(newValue);
-    }
-    return newValue; // Ensure the function returns the converted value
-  }
-
-  const formatValueForDisplay = (value, paramId) => {
-    value = Math.round(value * 100) / 100;
-    // Check if it's a frequency parameter and above 1KHz
-    if (paramId.includes('freq')) {
-      if (value >= 1000) {
-        return `${(value / 1000).toFixed(1)}KHz`;
-      }
-      return `${Math.round(value)}Hz`;
-    }
-    if (paramId.includes('order')) {
-      if (value > 0) {
-        return parseInt(value) * 12;
-      }
-      return "OFF"
-    }
-    if (paramId.includes('env')) {
-      return `${Math.round(value * 10) / 10}ms`
-    }
-    if (paramId.includes('drywet')) {
-      return `${Math.round(value * 100)}%`
-    }
-    if (paramId.includes('ratio')) {
-      return `${Math.round(value * 10) / 10}:1`
-    }
-    if (paramId.includes('Gain') || paramId.includes('knee') || paramId.includes('threshold')) {
-      return `${Math.round(value * 10) / 10}dB`
-    }
-
-    // For other cases, round to one decimal place
-    return Math.round(value * 10) / 10;
-  };
-
   return (
     <div id='main'>
       {props.error && (<ErrorAlert message={props.error.message} reset={props.resetErrorState} />)}
+      <div id='header'></div>
       <div id='controls'>
-        <div className='group-container'>
-          {/* Input signal meter */}
-          <DecibelMeter
-            event={props.events.comp_input}
-            invert={false}
-            decay={1}
+        <div id='inputMeter'>
+          <ScaledMeter
+            event={{
+              left: props.events.main_inputL,
+              right: props.events.main_inputR
+            }}
+            type={'input'}
+            direction={'vertical'}
+            girth={15}
+            subdivisions={16}
+            range={80}
           />
-
-          {/* Env signal meter */}
-          <DecibelMeter
-            event={props.events.comp_env}
-          />
-
-          {/* Compression curve graph */}
-          <CompGraph
-            threshold={props.comp_threshold}
-            ratio={props.comp_ratio}
-            knee={props.comp_knee}
-            events={props.events}
-          />
-
-          {/* Gain Reduction meter */}
-          <DecibelMeter
-            event={props.events.comp_gr}
-            invert={true}
-          />
-
-          {/* Output signal meter */}
-          <DecibelMeter
-            event={props.events.comp_output}
-            invert={false}
-          />
-
         </div>
-        {/* Create a container for each parameter group */}
-        {['comp', 'env', 'mix'].map(groupKey => {
-          // Determine the SVG component key (strip numbers if 'peak')
-          const svgKey = groupKey.includes('peak') ? 'peak' : groupKey;
-          return (
-            <div key={groupKey} id={groupKey} className="group-container">
-              {gfx[svgKey] ? React.createElement(gfx[svgKey], { className: "group-gfx" }) : ""}
-              <div className="group-params">
-                {/* Filter and map parameters that belong to the current group */}
-                {manifest.parameters.filter(param => param.paramId.startsWith(groupKey)).map(param => {
-                  const isOffset = param.paramId.includes('_ratio') || param.paramId.includes('_atk') || param.paramId.includes('_mix');
-                  const buttonValue = formatValueForButton(paramValues[param.paramId], param.paramId, param.min, param.max, param.log);
-                  const buttonDefaultValue = formatValueForButton(param.defaultValue, param.paramId, param.min, param.max, param.log);
-                  const accentColor = param.hue ? `hsl(${param.hue},100%, 60%)` : '#ccc';
-                  return (
-                    <div key={param.paramId} id={param.paramId} className={`group-param ${isOffset ? 'self-end' : ''}`}>
-                      <div id='knob-name'>{param.name}</div>
-                      <Knob
-                        value={buttonValue}
-                        defaultValue={buttonDefaultValue}
-                        onChange={(newValue) => handleValueChange(param, newValue)}
-                        name={param.name}
-                        paramId={param.paramId}
-                        accentColor={accentColor}
-                        knobColor="#050505"
-                      />
-                      <div className="param-value" style={{ color: accentColor }}>
-                        {`${formatValueForDisplay(paramValues[param.paramId], param.paramId)}`}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        {/*         <ExpBlock
+          props={props}
+          manifest={manifest}
+          paramValues={paramValues}
+          handleValueChange={handleValueChange}
+        /> */}
+        <CompBlock
+          props={props}
+          manifest={manifest}
+          paramValues={paramValues}
+          handleValueChange={handleValueChange}
+        />
+        <div id='inputMeter'>
+          <ScaledMeter
+            event={{
+              left: props.events.main_outputL,
+              right: props.events.main_outputR
+            }}
+            type={'output'}
+            direction={'vertical'}
+            girth={15}
+            subdivisions={12}
+            range={60}
+          />
+        </div>
       </div>
     </div >
   );

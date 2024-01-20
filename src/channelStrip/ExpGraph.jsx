@@ -54,7 +54,7 @@ function drawCompressorGraph(ctx, divWidth, divHeight, threshold, ratio, knee, e
     // Draw background line
 
     ctx.strokeStyle = "hsla(0, 0%, 0%, 0.2)";
-    ctx.lineWidth = 8;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
 
     ctx.beginPath();
@@ -102,7 +102,7 @@ function CompGraph({ threshold, ratio, knee, events }) {
     }, [threshold, ratio, knee, events]);
     return (
         <div id='graph-container' >
-            <canvas ref={canvasRef} width="200" height="200" />
+            <canvas ref={canvasRef} width="160" height="160" />
         </div>
     );
 }

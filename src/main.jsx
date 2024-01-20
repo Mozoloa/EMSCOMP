@@ -2,21 +2,16 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import Interface from './Interface.jsx'
 
-import createHooks from 'zustand'
-import createStore from 'zustand/vanilla'
+import { useStore } from 'zustand'
+import { createStore } from 'zustand/vanilla'
 
 import './index.css'
 
 
 // Initial state management
 const store = createStore(() => { });
-const useStore = createHooks(store);
-
-const errorStore = createStore(() => ({ error: null }));
-const useErrorStore = createHooks(errorStore);
-
 const eventStore = createStore(() => { });
-const useEventStore = createHooks(eventStore);
+const errorStore = createStore(() => ({ error: null }));
 
 // Interop bindings
 function requestParamValueUpdate(paramId, value) {
@@ -57,15 +52,15 @@ globalThis.__receiveError__ = (err) => {
 
 // Mount the interface
 function App(props) {
-  let state = useStore();
-  let { error } = useErrorStore();
-  let events = useEventStore();
+  let state = useStore(store);
+  let events = useStore(eventStore);
+  let { error } = useStore(errorStore);
 
   return (
     <Interface
       {...state}
-      error={error}
       events={events}
+      error={error}
       requestParamValueUpdate={requestParamValueUpdate}
       resetErrorState={() => errorStore.setState({ error: null })} />
   );

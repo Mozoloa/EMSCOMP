@@ -1,7 +1,6 @@
 import { Renderer, el } from '@elemaudio/core';
 import { RefMap } from './RefMap';
-import comp from './comp';
-
+import channelStrip from './channelStrip';
 
 // This project demonstrates writing a small FDN reverb effect in Elementary.
 //
@@ -63,13 +62,13 @@ function updateProps(state) {
 globalThis.__receiveStateChange__ = (serializedState) => {
   const state = JSON.parse(serializedState);
   if (shouldRender(prevState, state)) {
-    const props = prepProps(state, 'comp');
+    const props = prepProps(state, 'channelStrip');
     console.log('Starting rendering with props:', props);
 
-    const batch = comp(props, el.in({ channel: 0 }), el.in({ channel: 1 }));
+    const strip = channelStrip(props, el.in({ channel: 0 }), el.in({ channel: 1 }));
     let stats = core.render(
-      batch[0],
-      batch[1]
+      strip.left,
+      strip.right
     );
     console.log("rendering", stats);
   } else {
